@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lagerly</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0d0d0c;
+  --sf:       #131312;
+  --sf2:      #1a1a18;
+  --sf3:      #222220;
+  --bd:       #252523;
+  --bd2:      #323230;
+  --tx:       #deded6;
+  --tx2:      #868680;
+  --tx3:      #525250;
+  --ac:       #c4f000;
+  --amber:    #f5a623;
+  --green:    #4ade80;
+  --red:      #f87171;
+  --r:        3px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--bg); color: var(--tx);
+  font-family: 'Syne', sans-serif; font-size: 14px; line-height: 1.5;
+  height: 100dvh; overflow: hidden;
+}
+button { font-family: inherit; cursor: pointer; }
+input  { font-family: 'JetBrains Mono', monospace; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bd2); border-radius: 4px; }
+.icon { display:inline-block; width:16px; height:16px; flex-shrink:0; vertical-align:middle; }
+
+/* ---- LAYOUT ---- */
+#app { display: grid; grid-template-columns: 210px 1fr; height: 100dvh; overflow: hidden; }
+
+/* ---- SIDEBAR ---- */
+#sb { background: var(--sf); border-right: 1px solid var(--bd); display: flex; flex-direction: column; overflow: hidden; }
+.sb-logo { padding: 22px 18px 18px; border-bottom: 1px solid var(--bd); flex-shrink: 0; }
+.sb-logo-mark { font-size: 21px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+.sb-logo-mark span { color: var(--ac); }
+.sb-logo-sub { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--tx3); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 4px; }
+.sb-nav { padding: 10px 8px; flex-shrink: 0; }
+.sb-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--tx3); padding: 6px 10px 4px; }
+.sb-btn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px; background: transparent; border: none; border-radius: var(--r); color: var(--tx2); font-size: 13px; font-weight: 500; text-align: left; transition: background .12s, color .12s; min-height: 40px; }
+.sb-btn .icon { color: var(--tx3); transition: color .12s; }
+.sb-btn:hover { background: var(--sf2); color: var(--tx); }
+.sb-btn:hover .icon { color: var(--tx2); }
+.sb-btn.on { background: rgba(196,240,0,.07); color: var(--ac); }
+.sb-btn.on .icon { color: var(--ac); }
+.sb-recent { flex: 1; overflow-y: auto; border-top: 1px solid var(--bd); min-height: 0; }
+.sb-rec-hdr { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 6px; }
+.sb-rec-hdr span { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--tx3); }
+.sb-rec-hdr button { background: none; border: none; color: var(--tx3); padding: 4px; border-radius: 2px; display: flex; align-items: center; transition: color .12s; }
+.sb-rec-hdr button:hover { color: var(--ac); }
+.sb-item { display: block; width: 100%; padding: 8px 12px; background: transparent; border: none; border-radius: 2px; text-align: left; cursor: pointer; transition: background .1s; }
+.sb-item:hover { background: var(--sf2); }
+.sb-item.on { background: rgba(196,240,0,.05); }
+.sb-item-name { display: block; font-size: 12px; font-weight: 500; color: var(--tx); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 174px; }
+.sb-item-status { margin-top: 3px; }
+
+/* ---- BADGES ---- */
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 2px; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap; }
+.bd-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.b-pending  { background: rgba(82,82,80,.25); color: var(--tx2); } .b-pending  .bd-dot { background: var(--tx3); }
+.b-review   { background: rgba(245,166,35,.12); color: var(--amber); } .b-review   .bd-dot { background: var(--amber); }
+.b-approved { background: rgba(74,222,128,.1);  color: var(--green); } .b-approved .bd-dot { background: var(--green); }
+.b-rejected { background: rgba(248,113,113,.1); color: var(--red);   } .b-rejected .bd-dot { background: var(--red); }
+
+/* ---- MAIN ---- */
+#main { overflow-y: auto; position: relative; }
+.view { display: none; min-height: 100%; }
+.view.on { display: block; }
+
+/* ---- TOPBAR ---- */
+.topbar { position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 1px solid var(--bd); display: flex; align-items: center; justify-content: space-between; padding: 0 28px; height: 56px; flex-shrink: 0; }
+.topbar-l { display: flex; align-items: center; gap: 12px; }
+.topbar-r { display: flex; align-items: center; gap: 8px; }
+.tb-title  { font-size: 14px; font-weight: 600; letter-spacing: -.2px; }
+
+/* ---- BUTTONS ---- */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; height: 36px; border-radius: var(--r); font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 500; border: 1px solid transparent; cursor: pointer; transition: all .15s; white-space: nowrap; }
+.btn:disabled { opacity: .4; cursor: not-allowed; pointer-events: none; }
+.btn .icon { width: 14px; height: 14px; }
+.btn-primary { background: var(--ac); color: #0d0d0c; border-color: var(--ac); }
+.btn-primary:hover { background: #d0ff00; }
+.btn-ghost { background: transparent; color: var(--tx2); border-color: var(--bd2); }
+.btn-ghost:hover { background: var(--sf2); color: var(--tx); }
+.btn-save { background: rgba(196,240,0,.08); color: var(--ac); border-color: rgba(196,240,0,.2); }
+.btn-save:hover { background: rgba(196,240,0,.14); }
+.btn-icon-del { background: none; border: none; color: var(--tx3); padding: 4px 5px; border-radius: 2px; cursor: pointer; display: inline-flex; align-items: center; line-height: 1; transition: color .12s; }
+.btn-icon-del:hover { color: var(--red); }
+.btn-sq { padding: 0; width: 36px; justify-content: center; }
+
+/* ---- UPLOAD VIEW ---- */
+#view-upload { display: none; align-items: center; justify-content: center; min-height: 100%; padding: 48px 32px; flex-direction: column; gap: 20px; }
+#view-upload.on { display: flex; }
+.up-zone { position: relative; width: 100%; max-width: 520px; border: 1.5px dashed var(--bd2); border-radius: 8px; padding: 56px 40px; text-align: center; transition: border-color .2s, background .2s; cursor: pointer; }
+.up-zone:hover, .up-zone.drag { border-color: var(--ac); background: rgba(196,240,0,.03); }
+.up-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.up-icon { width: 56px; height: 56px; background: var(--sf2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+.up-icon .icon { width: 24px; height: 24px; color: var(--tx2); }
+.up-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.up-sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--tx2); }
+.up-fmts { display: flex; gap: 6px; justify-content: center; margin-top: 18px; }
+.fmt-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 3px 9px; border: 1px solid var(--bd2); border-radius: 2px; color: var(--tx3); letter-spacing: 0.5px; }
+.up-fb { width: 100%; max-width: 520px; opacity: 0; transition: opacity .2s; }
+.up-fb.on { opacity: 1; }
+.prog-track { height: 2px; background: var(--bd); border-radius: 1px; overflow: hidden; }
+.prog-fill  { height: 100%; background: var(--ac); width: 0; transition: width .4s ease; }
+.up-txt { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--tx2); margin-top: 8px; text-align: center; }
+
+/* ---- LIST VIEW ---- */
+#view-liste { padding: 0; }
+.tbl-wrap { overflow-x: auto; }
+table.dtbl { width: 100%; border-collapse: collapse; }
+table.dtbl th { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: var(--tx3); padding: 12px 20px; text-align: left; border-bottom: 1px solid var(--bd); position: sticky; top: 56px; background: var(--bg); white-space: nowrap; }
+table.dtbl td { padding: 14px 20px; border-bottom: 1px solid var(--bd); vertical-align: middle; }
+table.dtbl tbody tr { cursor: pointer; transition: background .1s; }
+table.dtbl tbody tr:hover td { background: var(--sf); }
+.c-name { font-weight: 600; font-size: 13px; }
+.c-mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--tx2); }
+
+/* ---- DETAIL VIEW ---- */
+#view-detail { padding: 0; }
+.det-body { padding: 24px 28px 48px; }
+.det-grid { display: grid; grid-template-columns: 1fr 296px; gap: 20px; }
+.sec-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: var(--tx3); margin-bottom: 10px; }
+.pos-wrap { border: 1px solid var(--bd); border-radius: 4px; overflow: hidden; }
+table.ptbl { width: 100%; border-collapse: collapse; }
+table.ptbl th { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--tx3); padding: 10px 12px; text-align: left; background: var(--sf); border-bottom: 1px solid var(--bd); }
+table.ptbl td { padding: 6px 12px; border-bottom: 1px solid var(--bd); vertical-align: middle; }
+table.ptbl tr:last-child td { border-bottom: none; }
+.p-input { width: 100%; background: transparent; border: 1px solid transparent; border-radius: 2px; color: var(--tx); font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 5px 7px; transition: border-color .12s, background .12s; min-height: 32px; }
+.p-input:focus { outline: none; border-color: var(--ac); background: rgba(196,240,0,.04); }
+.p-idx  { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--tx3); user-select: none; }
+.p-conf { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--tx2); }
+.p-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); display: inline-block; }
+.save-bar { margin-top: 10px; display: none; align-items: center; gap: 8px; }
+.save-bar.on { display: flex; }
+.save-hint { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--tx3); }
+.add-pos-form { margin-top: 16px; }
+.add-pos-row { display: flex; gap: 8px; align-items: center; }
+.add-pos-row .p-input-name  { flex: 3; min-width: 0; }
+.add-pos-row .p-input-menge { flex: 0 0 90px; }
+.add-pos-row .p-input-unit  { flex: 0 0 90px; }
+.ocr-wrap { margin-top: 24px; }
+.ocr-box { background: var(--sf); border: 1px solid var(--bd); border-radius: 4px; padding: 14px 16px; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.8; color: var(--tx2); max-height: 240px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
+.meta-card { background: var(--sf); border: 1px solid var(--bd); border-radius: 4px; overflow: hidden; }
+.meta-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 11px 14px; border-bottom: 1px solid var(--bd); }
+.meta-row:last-child { border-bottom: none; }
+.m-key { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--tx3); letter-spacing: 0.3px; flex-shrink: 0; }
+.m-val { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--tx); text-align: right; word-break: break-all; max-width: 168px; }
+
+/* ---- LAGER VIEW ---- */
+#view-lager { padding: 0; }
+.lag-stats { display: grid; grid-template-columns: repeat(3,1fr); border-bottom: 1px solid var(--bd); background: var(--sf); }
+.lag-stat { padding: 20px 24px; border-right: 1px solid var(--bd); }
+.lag-stat:last-child { border-right: none; }
+.lag-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--tx3); margin-bottom: 6px; }
+.lag-val { font-size: 28px; font-weight: 700; letter-spacing: -1px; line-height: 1; color: var(--tx); }
+.lag-val.warn { color: var(--amber); }
+.bbar { margin-top: 3px; height: 2px; width: 64px; background: var(--bd); border-radius: 1px; overflow: hidden; }
+.bbar-fill { height: 100%; border-radius: 1px; }
+.bbar-fill.ok   { background: var(--green); }
+.bbar-fill.warn { background: var(--amber); }
+tr.row-low td { background: rgba(245,166,35,.03); }
+.warn-lbl { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--amber); display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; }
+.warn-lbl .icon { width: 11px; height: 11px; }
+
+/* ---- EMPTY / LOADING ---- */
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 72px 32px; color: var(--tx3); text-align: center; gap: 12px; }
+.empty .icon { width: 36px; height: 36px; opacity: 0.25; }
+.empty p { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.spin { width: 18px; height: 18px; border: 2px solid var(--bd2); border-top-color: var(--ac); border-radius: 50%; animation: rot .65s linear infinite; display: inline-block; }
+@keyframes rot { to { transform: rotate(360deg); } }
+
+/* ---- TOASTS ---- */
+#toasts { position: fixed; bottom: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast { background: var(--sf2); border: 1px solid var(--bd2); border-radius: var(--r); padding: 11px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--tx); min-width: 220px; max-width: 340px; display: flex; align-items: center; gap: 10px; animation: tin .18s ease; pointer-events: auto; }
+.t-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.toast.success .t-dot { background: var(--green); }
+.toast.error   .t-dot { background: var(--red);   }
+.toast.info    .t-dot { background: var(--ac);     }
+@keyframes tin { from { transform: translateX(12px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+</style>
+</head>
+<body>
+
+<!-- SVG icon sprite -->
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+    <path d="M12 12v9"/><path d="m16 16-4-4-4 4"/>
+  </symbol>
+  <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="8" x2="21" y1="6"  y2="6" /><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/>
+    <line x1="3" x2="3.01" y1="6"  y2="6" /><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>
+  </symbol>
+  <symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+    <path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
+  </symbol>
+  <symbol id="i-reload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>
+  </symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 6 9 17l-5-5"/>
+  </symbol>
+  <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m15 18-6-6 6-6"/>
+  </symbol>
+  <symbol id="i-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
+    <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/>
+  </symbol>
+  <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+  </symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+    <path d="M12 9v4"/><path d="M12 17h.01"/>
+  </symbol>
+  <symbol id="i-pkg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/>
+    <path d="M12 22V12"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="m7.5 4.27 9 5.15"/>
+  </symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+  </symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+  </symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 12h14"/><path d="M12 5v14"/>
+  </symbol>
+</svg>
+
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside id="sb">
+    <div class="sb-logo">
+      <div class="sb-logo-mark">Lager<span>ly</span></div>
+      <div class="sb-logo-sub">Lieferschein Scanner</div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-lbl">Navigation</div>
+      <button class="sb-btn on"  data-nav="upload">
+        <svg class="icon"><use href="#i-up"/></svg> Hochladen
+      </button>
+      <button class="sb-btn" data-nav="liste">
+        <svg class="icon"><use href="#i-list"/></svg> Lieferscheine
+      </button>
+      <button class="sb-btn" data-nav="lager">
+        <svg class="icon"><use href="#i-box"/></svg> Lagerbestand
+      </button>
+    </nav>
+    <div class="sb-recent">
+      <div class="sb-rec-hdr">
+        <span>Zuletzt</span>
+        <button onclick="refreshSb()" aria-label="Aktualisieren">
+          <svg class="icon" style="width:12px;height:12px"><use href="#i-reload"/></svg>
+        </button>
+      </div>
+      <div id="sb-items"></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="main">
+
+    <!-- UPLOAD -->
+    <section id="view-upload" class="view on">
+      <div class="up-zone" id="drop-zone">
+        <input type="file" id="file-in" accept=".pdf,.jpg,.jpeg,.png">
+        <div class="up-icon"><svg class="icon"><use href="#i-up"/></svg></div>
+        <div class="up-title">Lieferschein hochladen</div>
+        <div class="up-sub">Datei hierher ziehen oder klicken</div>
+        <div class="up-fmts">
+          <span class="fmt-tag">PDF</span>
+          <span class="fmt-tag">JPG</span>
+          <span class="fmt-tag">PNG</span>
+        </div>
+      </div>
+      <div class="up-fb" id="up-fb">
+        <div class="prog-track"><div class="prog-fill" id="prog"></div></div>
+        <div class="up-txt" id="up-txt">Wird verarbeitet...</div>
+      </div>
+    </section>
+
+    <!-- LISTE -->
+    <section id="view-liste" class="view">
+      <div class="topbar">
+        <div class="topbar-l"><span class="tb-title">Lieferscheine</span></div>
+        <div class="topbar-r">
+          <button class="btn btn-ghost btn-sq" onclick="loadListe()" aria-label="Aktualisieren">
+            <svg class="icon"><use href="#i-reload"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="liste-body"></div>
+    </section>
+
+    <!-- DETAIL -->
+    <section id="view-detail" class="view">
+      <div class="topbar">
+        <div class="topbar-l">
+          <button class="btn btn-ghost btn-sq" onclick="nav('liste')" aria-label="Zurück">
+            <svg class="icon"><use href="#i-back"/></svg>
+          </button>
+          <span class="tb-title" id="det-title">—</span>
+          <span id="det-badge"></span>
+        </div>
+        <div class="topbar-r" id="det-actions"></div>
+      </div>
+      <div class="det-body">
+        <div class="det-grid">
+          <div>
+            <div class="sec-lbl">Positionen</div>
+            <div id="pos-body"></div>
+            <div class="save-bar" id="save-bar">
+              <button class="btn btn-save" onclick="savePosn()">
+                <svg class="icon"><use href="#i-save"/></svg> Speichern
+              </button>
+              <span class="save-hint" id="save-hint"></span>
+            </div>
+            <div class="add-pos-form" id="add-pos-form" style="display:none">
+              <div class="sec-lbl">Position hinzufügen</div>
+              <div class="add-pos-row">
+                <input class="p-input p-input-name"  id="new-name"    type="text"   placeholder="Produktname">
+                <input class="p-input p-input-menge" id="new-menge"   type="number" step="0.01" min="0.01" placeholder="Menge">
+                <input class="p-input p-input-unit"  id="new-einheit" type="text"   placeholder="Einheit">
+                <button class="btn btn-save" onclick="submitAddPos()">
+                  <svg class="icon"><use href="#i-plus"/></svg> Hinzufügen
+                </button>
+              </div>
+            </div>
+            <div class="ocr-wrap">
+              <div class="sec-lbl">OCR-Rohtext</div>
+              <div class="ocr-box" id="ocr-box">—</div>
+            </div>
+          </div>
+          <div>
+            <div class="sec-lbl">Metadaten</div>
+            <div class="meta-card" id="meta-card"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LAGER -->
+    <section id="view-lager" class="view">
+      <div class="topbar">
+        <div class="topbar-l"><span class="tb-title">Lagerbestand</span></div>
+        <div class="topbar-r">
+          <button class="btn btn-ghost btn-sq" onclick="loadLager()" aria-label="Aktualisieren">
+            <svg class="icon"><use href="#i-reload"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="lag-stats" class="lag-stats"></div>
+      <div id="lag-body"></div>
+      <div class="save-bar" id="lag-save-bar" style="padding:0 28px 20px">
+        <button class="btn btn-save" onclick="saveLager()">
+          <svg class="icon"><use href="#i-save"/></svg> Speichern
+        </button>
+        <span class="save-hint" id="lag-save-hint"></span>
+      </div>
+    </section>
+
+  </main>
+</div>
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+const API = 'http://localhost:8000';
+let curId = null, edits = {}, lagerEdits = {};
+
+/* helpers */
+const $ = id => document.getElementById(id);
+const svg = id => `<svg class="icon" aria-hidden="true"><use href="#${id}"/></svg>`;
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+
+const SL = { pending:'Ausstehend', review:'Prüfen', approved:'Genehmigt', rejected:'Abgelehnt' };
+
+function badge(st) {
+  return `<span class="badge b-${st}"><span class="bd-dot"></span>${SL[st] ?? st}</span>`;
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span class="t-dot"></span><span>${esc(msg)}</span>`;
+  $('toasts').appendChild(el);
+  setTimeout(() => { el.style.transition='opacity .2s'; el.style.opacity='0'; setTimeout(()=>el.remove(),220); }, 3500);
+}
+
+function loading(msg = '') {
+  return `<div class="empty"><div class="spin"></div>${msg?`<p>${esc(msg)}</p>`:''}</div>`;
+}
+
+/* navigation */
+function nav(view, id = null) {
+  curId = id; edits = {};
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+  document.querySelectorAll('.sb-btn[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === view));
+  $(`view-${view}`).classList.add('on');
+  if (view === 'liste')              loadListe();
+  if (view === 'lager')              loadLager();
+  if (view === 'detail' && id)       loadDetail(id);
+}
+document.querySelectorAll('.sb-btn[data-nav]').forEach(b => b.addEventListener('click', () => nav(b.dataset.nav)));
+
+/* upload */
+const dz = $('drop-zone'), fi = $('file-in');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); if (e.dataTransfer.files[0]) doUpload(e.dataTransfer.files[0]); });
+fi.addEventListener('change', () => { if (fi.files[0]) doUpload(fi.files[0]); });
+
+async function doUpload(file) {
+  const fb = $('up-fb'), pg = $('prog'), ut = $('up-txt');
+  fb.classList.add('on'); pg.style.width = '25%';
+  ut.textContent = `Lade hoch: ${file.name}`;
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    pg.style.width = '60%';
+    const res = await fetch(`${API}/upload`, { method:'POST', body:fd });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const d = await res.json();
+    pg.style.width = '100%';
+    ut.textContent = `Verarbeitet — ${SL[d.status] ?? d.status}`;
+    toast(`${d.dateiname} hochgeladen`, 'success');
+    refreshSb();
+    setTimeout(() => { fb.classList.remove('on'); pg.style.width='0'; fi.value=''; nav('detail', d.id); }, 900);
+  } catch(e) {
+    toast(`Upload fehlgeschlagen: ${e.message}`, 'error');
+    fb.classList.remove('on'); pg.style.width='0';
+  }
+}
+
+/* liste */
+async function loadListe() {
+  const el = $('liste-body');
+  el.innerHTML = loading('Lade Lieferscheine...');
+  try {
+    const res = await fetch(`${API}/lieferscheine`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    if (!data.length) {
+      el.innerHTML = `<div class="empty">${svg('i-file')}<p>Noch keine Lieferscheine vorhanden</p></div>`;
+      return;
+    }
+    el.innerHTML = `<div class="tbl-wrap"><table class="dtbl">
+      <thead><tr><th>Dateiname</th><th>Format</th><th>Status</th><th>Hochgeladen</th></tr></thead>
+      <tbody>${data.map(l=>`
+        <tr onclick="nav('detail',${l.id})">
+          <td class="c-name">${esc(l.dateiname)}</td>
+          <td class="c-mono">${l.format_typ||'—'}</td>
+          <td>${badge(l.status)}</td>
+          <td class="c-mono">${fmtDate(l.erstellt_am)}</td>
+        </tr>`).join('')}
+      </tbody></table></div>`;
+  } catch {
+    el.innerHTML = `<div class="empty"><p>Verbindung zum Backend fehlgeschlagen</p></div>`;
+    toast('Backend nicht erreichbar', 'error');
+  }
+}
+
+/* sidebar recent */
+async function refreshSb() {
+  try {
+    const res = await fetch(`${API}/lieferscheine`);
+    const data = await res.json();
+    const recent = data.slice(-8).reverse();
+    const el = $('sb-items');
+    if (!recent.length) {
+      el.innerHTML = `<div style="padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">—</div>`;
+      return;
+    }
+    el.innerHTML = recent.map(l=>`
+      <button class="sb-item${curId===l.id?' on':''}" onclick="nav('detail',${l.id})">
+        <span class="sb-item-name">${esc(l.dateiname)}</span>
+        <div class="sb-item-status">${badge(l.status)}</div>
+      </button>`).join('');
+  } catch {}
+}
+
+/* detail */
+async function loadDetail(id) {
+  curId = id; edits = {};
+  $('save-bar').classList.remove('on');
+  $('det-title').textContent = '—';
+  $('det-badge').innerHTML = '';
+  $('det-actions').innerHTML = '';
+  $('pos-body').innerHTML = loading();
+  try {
+    const res = await fetch(`${API}/lieferscheine/${id}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const d = await res.json();
+
+    $('det-title').textContent = d.dateiname;
+    $('det-badge').innerHTML = badge(d.status);
+
+        const canEdit = d.status === 'pending' || d.status === 'review';
+    const approveBtn = canEdit
+      ? `<button class="btn btn-primary" onclick="approveDet(${d.id})">${svg('i-check')} Genehmigen</button>`
+      : d.status === 'approved'
+        ? `<button class="btn btn-ghost" disabled>${svg('i-check')} Genehmigt</button>`
+        : `<button class="btn btn-ghost" disabled>${svg('i-x')} Abgelehnt</button>`;
+    $('det-actions').innerHTML =
+      `<button class="btn btn-ghost btn-sq" onclick="deleteDet(${d.id})" title="Löschen">${svg('i-trash')}</button>` +
+      approveBtn;
+    $('add-pos-form').style.display = canEdit ? '' : 'none';
+
+    if (!d.positionen.length) {
+      $('pos-body').innerHTML = `<div class="empty" style="padding:36px 0">${svg('i-pkg')}<p>Keine Positionen erkannt</p></div>`;
+    } else {
+      $('pos-body').innerHTML = `<div class="pos-wrap"><table class="ptbl">
+        <thead><tr><th style="width:30px">#</th><th>Produkt</th><th style="width:88px">Menge</th><th style="width:80px">Einheit</th><th style="width:62px">Konfidenz</th><th style="width:26px"></th><th style="width:30px"></th></tr></thead>
+        <tbody>${d.positionen.map((p,i)=>`
+          <tr>
+            <td class="p-idx">${i+1}</td>
+            <td><input class="p-input" type="text" value="${esc(p.produktname)}" onchange="markEdit(${p.id},'produktname',this.value)"></td>
+            <td><input class="p-input" type="number" step="0.01" value="${p.menge}" style="width:76px" onchange="markEdit(${p.id},'menge',parseFloat(this.value))"></td>
+            <td><input class="p-input" type="text" value="${esc(p.einheit)}" style="width:68px" onchange="markEdit(${p.id},'einheit',this.value)"></td>
+            <td class="p-conf">${p.konfidenz!=null?(p.konfidenz*100).toFixed(0)+'%':'—'}</td>
+            <td>${p.manuell_korrigiert?'<span class="p-dot" title="Manuell korrigiert"></span>':''}</td>
+            <td><button class="btn-icon-del" onclick="deletePos(${p.id})" title="Entfernen">${svg('i-trash')}</button></td>
+          </tr>`).join('')}
+        </tbody></table></div>`;
+    }
+
+    $('ocr-box').textContent = d.ocr_text_roh || 'Kein OCR-Text vorhanden.';
+
+    $('meta-card').innerHTML = [
+      ['ID', `#${d.id}`],
+      ['Format', d.format_typ || '—'],
+      ['Status', badge(d.status)],
+      ['Hochgeladen', fmtDate(d.erstellt_am)],
+      ['Bearbeitet', fmtDate(d.bearbeitet_am)],
+      ['Positionen', String(d.positionen.length)],
+    ].map(([k,v])=>`<div class="meta-row"><span class="m-key">${k}</span><span class="m-val">${v}</span></div>`).join('');
+
+  } catch(e) {
+    $('pos-body').innerHTML = `<div class="empty"><p>Fehler: ${esc(e.message)}</p></div>`;
+    toast('Detail konnte nicht geladen werden', 'error');
+  }
+}
+
+function markEdit(posId, field, value) {
+  if (!edits[posId]) edits[posId] = { id: posId };
+  edits[posId][field] = value;
+  const n = Object.keys(edits).length;
+  $('save-bar').classList.add('on');
+  $('save-hint').textContent = `${n} Position${n!==1?'en':''} geändert`;
+}
+
+async function savePosn() {
+  const updates = Object.values(edits);
+  if (!updates.length) return;
+  try {
+    const res = await fetch(`${API}/lieferscheine/${curId}/positionen`, {
+      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(updates),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    edits = {};
+    $('save-bar').classList.remove('on');
+    toast('Positionen gespeichert', 'success');
+    loadDetail(curId);
+  } catch(e) {
+    toast(`Speichern fehlgeschlagen: ${e.message}`, 'error');
+  }
+}
+
+async function approveDet(id) {
+  try {
+    const res = await fetch(`${API}/lieferscheine/${id}/approve`, { method:'POST' });
+    if (!res.ok) { const b = await res.json().catch(()=>({})); throw new Error(b.detail||`HTTP ${res.status}`); }
+    toast('Lieferschein genehmigt — Lager aktualisiert', 'success');
+    refreshSb();
+    loadDetail(id);
+  } catch(e) {
+    toast(`Fehler: ${e.message}`, 'error');
+  }
+}
+
+async function deleteDet(id) {
+  if (!confirm('Lieferschein unwiderruflich löschen?')) return;
+  try {
+    const res = await fetch(`${API}/lieferscheine/${id}`, { method:'DELETE' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    toast('Lieferschein gelöscht', 'info');
+    refreshSb();
+    nav('liste');
+  } catch(e) {
+    toast(`Fehler: ${e.message}`, 'error');
+  }
+}
+
+async function deletePos(posId) {
+  try {
+    const res = await fetch(`${API}/lieferscheine/${curId}/positionen/${posId}`, { method:'DELETE' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    delete edits[posId];
+    if (!Object.keys(edits).length) $('save-bar').classList.remove('on');
+    toast('Position entfernt', 'success');
+    loadDetail(curId);
+  } catch(e) {
+    toast(`Fehler: ${e.message}`, 'error');
+  }
+}
+
+async function submitAddPos() {
+  const name   = $('new-name').value.trim();
+  const menge  = parseFloat($('new-menge').value);
+  const einheit = $('new-einheit').value.trim();
+  if (!name || !einheit || isNaN(menge) || menge <= 0) {
+    toast('Alle Felder ausfüllen', 'error'); return;
+  }
+  try {
+    const res = await fetch(`${API}/lieferscheine/${curId}/positionen`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ produktname: name, menge, einheit }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    $('new-name').value = ''; $('new-menge').value = ''; $('new-einheit').value = '';
+    toast('Position hinzugefügt', 'success');
+    loadDetail(curId);
+  } catch(e) {
+    toast(`Fehler: ${e.message}`, 'error');
+  }
+}
+
+/* lager */
+async function loadLager() {
+  const statsEl = $('lag-stats'), bodyEl = $('lag-body');
+  bodyEl.innerHTML = loading('Lade Lagerbestand...'); statsEl.innerHTML = '';
+  try {
+    const [ar, lr] = await Promise.all([fetch(`${API}/lager`), fetch(`${API}/lager/niedrig`)]);
+    if (!ar.ok) throw new Error();
+    const all = await ar.json(), low = await lr.json();
+    const lowSet = new Set(low.map(l=>l.id));
+    const total = all.reduce((s,a)=>s+a.bestand,0);
+
+    statsEl.innerHTML = `
+      <div class="lag-stat"><div class="lag-lbl">Artikel gesamt</div><div class="lag-val">${all.length}</div></div>
+      <div class="lag-stat"><div class="lag-lbl">Niedrigbestand</div><div class="lag-val${low.length?' warn':''}">${low.length}</div></div>
+      <div class="lag-stat"><div class="lag-lbl">Gesamtmenge</div><div class="lag-val">${total.toFixed(1)}</div></div>`;
+
+    if (!all.length) {
+      bodyEl.innerHTML = `<div class="empty">${svg('i-box')}<p>Lager ist leer</p></div>`;
+      return;
+    }
+
+    lagerEdits = {};
+    $('lag-save-bar').classList.remove('on');
+    bodyEl.innerHTML = `<div class="tbl-wrap"><table class="dtbl">
+      <thead><tr><th>Produkt</th><th>Bestand</th><th style="width:90px">Einheit</th><th style="width:130px">Mindestbestand</th><th>Letzte Lieferung</th></tr></thead>
+      <tbody>${all.map(a => {
+        const isLow = lowSet.has(a.id);
+        const pct = a.mindestbestand > 0
+          ? Math.min(100, (a.bestand / (a.mindestbestand * 2)) * 100)
+          : Math.min(100, (a.bestand / 10) * 100);
+        return `<tr class="${isLow?'row-low':''}">
+          <td>
+            <span style="font-weight:600">${esc(a.produktname)}</span>
+            ${isLow?`<span class="warn-lbl">${svg('i-warn')} Niedrig</span>`:''}
+          </td>
+          <td>
+            <input class="p-input" type="number" step="0.01" value="${a.bestand}" style="width:90px"
+              onchange="markLagerEdit(${a.id},'bestand',parseFloat(this.value))">
+            <div class="bbar"><div class="bbar-fill ${isLow?'warn':'ok'}" style="width:${pct}%"></div></div>
+          </td>
+          <td><input class="p-input" type="text" value="${esc(a.einheit)}" style="width:72px"
+            onchange="markLagerEdit(${a.id},'einheit',this.value)"></td>
+          <td><input class="p-input" type="number" step="0.01" value="${a.mindestbestand}" style="width:100px"
+            onchange="markLagerEdit(${a.id},'mindestbestand',parseFloat(this.value))"></td>
+          <td class="c-mono">${fmtDate(a.zuletzt_geliefert)}</td>
+        </tr>`;
+      }).join('')}
+      </tbody></table></div>`;
+  } catch {
+    bodyEl.innerHTML = `<div class="empty"><p>Verbindung zum Backend fehlgeschlagen</p></div>`;
+    toast('Lager konnte nicht geladen werden', 'error');
+  }
+}
+
+function markLagerEdit(id, field, value) {
+  if (!lagerEdits[id]) lagerEdits[id] = { id };
+  lagerEdits[id][field] = value;
+  const n = Object.keys(lagerEdits).length;
+  $('lag-save-bar').classList.add('on');
+  $('lag-save-hint').textContent = `${n} Artikel geändert`;
+}
+
+async function saveLager() {
+  const updates = Object.values(lagerEdits);
+  if (!updates.length) return;
+  try {
+    await Promise.all(updates.map(({ id, ...fields }) =>
+      fetch(`${API}/lager/${id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fields),
+      }).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); })
+    ));
+    lagerEdits = {};
+    $('lag-save-bar').classList.remove('on');
+    toast('Lagerbestand gespeichert', 'success');
+    loadLager();
+  } catch(e) {
+    toast(`Fehler: ${e.message}`, 'error');
+  }
+}
+
+/* init */
+refreshSb();
+</script>
+</body>
+</html>
