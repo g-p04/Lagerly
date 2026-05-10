@@ -24,7 +24,6 @@ Warehouse management tool that digitizes paper delivery notes via OCR. Upload a 
 ## Features
 
 - **OCR pipeline** — perspective correction, shadow removal, adaptive thresholding, per-row Tesseract (PSM 7) with full-page fallback (PSM 6)
-- **Two delivery note formats** — IceFlow and Backring, auto-detected from OCR output
 - **Review workflow** — inspect and correct extracted line items before approving
 - **Inventory management** — stock levels update on approval; low-stock warnings for items below minimum threshold
 - **REST API** — 11 endpoints covering upload, CRUD on line items, approval/rejection, and inventory edits
