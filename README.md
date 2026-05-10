@@ -9,6 +9,18 @@ Warehouse management tool that digitizes paper delivery notes via OCR. Upload a 
 
 ---
 
+## Screenshots
+
+| Upload | Lieferscheine |
+|--------|--------------|
+| ![Upload](docs/screenshots/01_upload.png) | ![Lieferscheine](docs/screenshots/02_lieferscheine.png) |
+
+| Review | Lagerbestand |
+|--------|-------------|
+| ![Review](docs/screenshots/03_detail.png) | ![Lagerbestand](docs/screenshots/04_lagerbestand.png) |
+
+---
+
 ## Features
 
 - **OCR pipeline** — perspective correction, shadow removal, adaptive thresholding, per-row Tesseract (PSM 7) with full-page fallback (PSM 6)
